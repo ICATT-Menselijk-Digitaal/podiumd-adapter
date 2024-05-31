@@ -3,17 +3,14 @@ using PodiumdAdapter.Web.Endpoints;
 using PodiumdAdapter.Web.Endpoints.ObjectenEndpoints;
 using PodiumdAdapter.Web.Infrastructure;
 using PodiumdAdapter.Web.Infrastructure.UrlRewriter;
-using PodiumdAdapter.Web.Middleware;
 using Serilog;
 using Serilog.Events;
-using Serilog.Formatting.Json;
 
 using var logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.AspNetCore.Authentication", LogEventLevel.Information) //logeventlevel information voor Microsoft.AspNetCore.Authentication namespace omdat deze namespace de unauthorizations gooit, voorbeeld: Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler: Information: AuthenticationScheme: Bearer was challenged.
     .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-    .WriteTo.Console(new JsonFormatter())
+    .WriteTo.Console()
     .CreateLogger();
 
 try
@@ -22,7 +19,7 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Services toevoegen aan de container.
+    // Add services to the container.
     builder.Host.UseSerilog(logger);
 
     builder.Services.AddHttpContextAccessor();
@@ -38,24 +35,20 @@ try
     builder.Services.AddSmoelenboekClient(builder.Configuration);
     builder.Services.AddUrlRewriter(EsuiteUrlRewriteMaps.GetRewriters);
 
-    // Deze regel uitcommentariëren als je PodiumdAdapter.Web.http wilt gebruiken
+    //comment this line if you want to use PodiumdAdapter.Web.http
     builder.Services.AddAuth(builder.Configuration);
 
-    var app = builder.Build();
 
-    // Configureer de HTTP request pipeline.
+    var app = builder.Build();
+    // Configure the HTTP request pipeline.
     app.UseSerilogRequestLogging();
-    app.UseRouting(); // Zorg ervoor dat routing is ingesteld voordat middleware wordt gebruikt die afhankelijk is van route-informatie
-    app.UseMiddleware<StatusCodeLoggingMiddleware>(); // Middleware om HTTP-statuscodes toe te voegen aan Serilog JSON-logs, aangezien deze standaard niet zijn opgenomen
-    app.UseAuthentication(); // Zorg ervoor dat de authenticatiemiddleware voor de autorisatie wordt aangeroepen
-    app.UseAuthorization();
     app.UseUrlRewriter();
 
-    // Top-level route registrations
     app.MapHealthChecks("/healthz").AllowAnonymous();
     app.MapEsuiteEndpoints();
     app.MapObjectenEndpoints();
     app.MapReverseProxy();
+
 
     app.Run();
 }
