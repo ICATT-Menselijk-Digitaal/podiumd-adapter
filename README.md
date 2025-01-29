@@ -37,20 +37,17 @@ $ESUITE_CLIENT_ID='my-client-id'
 # IMPORTANT The secret needs to be at least 32 characters
 $ESUITE_CLIENT_SECRET='abc$%^&*defg1234567abc$%^&*defg1'
 
-# Each client what will connect to the e-Suite (klanten, contactmomenten, zaken and catalogi) parts of the podiumd-adapter must do so using a Bearer token,
-# following the convention used in Open Zaak:
-# https://open-zaak.readthedocs.io/en/stable/client-development/authentication.html
-# For the OverigeObjecten (Interne taak) part of the podiumd-adapter you only need te specify a client secret.
-# Client IDs are set up using the CLIENTS__INDEX__ID naming convention
-# You will need to set up at least 1 Client
+# Each client that will connect to the e-Suite through this adapter must authenticate itself to this adapter using a Bearer token
+# A client could be KISS, the elastic sync tool utilized by KISS or any other application that would like to use this adapter to communicate with the e-suite
+# Specify an Id and a secret for each client
 $CLIENTS__0__ID='MY-CLIENT-ID-FOR-EXAMPLE-KISS'
-$CLIENTS__1__ID='ANOTHER-CLIENT-ID-IF-APPLICABLE'
-
-# Just like with the client ids, you can set up multiple using the CLIENTS__INDEX__SECRET naming convention
-# Secrets have a minimum length of 16 characters
-# For the Interne taak part of the podiumd-adapter the client secrets are specified in the same way.
 $CLIENTS__0__SECRET='zyxu908237^%&*zyxu908237^%&*'
+$CLIENTS__1__ID='ANOTHER-CLIENT-ID-IF-APPLICABLE'
 $CLIENTS__1__SECRET='erfg94367!@$erfg94367!@$'
+# etc
+# The clients must provide tokens following the convention used in Open Zaak:
+# https://open-zaak.readthedocs.io/en/stable/client-development/authentication.html
+# Secrets have a minimum length of 16 characters
 
 # Configure the Contact Types in the E-Suite that correspond with a contactverzoek in KISS
 # Use the same naming convention for arrays as above
