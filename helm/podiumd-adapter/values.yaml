@@ -28,21 +28,15 @@ podSecurityContext:
   {}
   # fsGroup: 2000
 
-securityContext: {}
-#    privileged: false
-#    allowPrivilegeEscalation: false
-#    runAsNonRoot: false
-#    capabilities:
-#      drop:
-#        - all
-#      add:
-#        - chown
-#        - dac_override
-#        - setgid
-#        - setuid
-#        - net_bind_service
-#    # Warning: the Nginx image is at this moment not able to run on a read-only filesystem.
-#    readOnlyRootFilesystem: false
+securityContext:
+  privileged: false
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 10000
+  capabilities:
+    drop:
+      - all
+  readOnlyRootFilesystem: true
 
 service:
   type: ClusterIP
