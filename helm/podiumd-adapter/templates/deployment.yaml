@@ -35,8 +35,8 @@ spec:
           {{- if .Values.image.pullPolicy }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- else }}
-          {{- end }}
           imagePullPolicy: Always
+          {{- end }}
           ports:
             - name: http
               containerPort: 8080
@@ -49,13 +49,25 @@ spec:
             httpGet:
               path: /healthz
               port: http
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: podiumd-adapter-config
             - secretRef:
                 name: podiumd-adapter-secrets
+          env:
+            {{- if and .Values.extraTrustedCA.enabled .Values.extraTrustedCA.setSslCertFile }}
+            - name: SSL_CERT_FILE
+              value: {{ .Values.extraTrustedCA.mountPath }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.extraTrustedCA.enabled }}
+            - name: extra-ca
+              mountPath: {{ .Values.extraTrustedCA.mountPath }}
+              subPath: {{ .Values.extraTrustedCA.certFilename }}
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -67,4 +79,10 @@ spec:
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.extraTrustedCA.enabled }}
+      volumes:
+        - name: extra-ca
+          configMap:
+            name: {{ .Values.extraTrustedCA.configMapName }}
       {{- end }}

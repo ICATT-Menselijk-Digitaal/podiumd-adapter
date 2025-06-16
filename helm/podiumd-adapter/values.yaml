@@ -102,3 +102,10 @@ strategy:
     maxSurge: 1
 
 cronjobs: []
+
+extraTrustedCA:
+  enabled: false
+  configMapName: sectigoroot
+  certFilename: sectigoroot.crt
+  mountPath: /etc/ssl/certs/sectigoroot.crt
+  setSslCertFile: false
