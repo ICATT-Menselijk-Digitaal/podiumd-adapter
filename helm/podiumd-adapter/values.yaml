@@ -116,5 +116,6 @@ extraVolumeMounts: []
 # e.g:
 # extraVolumeMounts:
 #  - name: my-secret-mount
+#    readOnly: true
 #    subPath: ca.crt
 #    mountPath: /etc/ssl/certs/my-custom-ca.crt
