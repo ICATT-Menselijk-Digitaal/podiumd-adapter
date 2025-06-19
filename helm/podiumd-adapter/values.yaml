@@ -103,7 +103,7 @@ strategy:
 
 cronjobs: []
 
-# -- Optionally specify extra list of additional volumes
+# -- Optionally specify extra list of additional volumes, for example to trust extra ca certificates.
 extraVolumes: []
 # e.g:
 # extraVolumes:
@@ -111,7 +111,7 @@ extraVolumes: []
 #     configMap:
 #       name: verify-certs
 
-# -- Optionally specify extra list of additional volumeMounts
+# -- Optionally specify extra list of additional volumeMounts, for example to trust extra ca certificates.
 extraVolumeMounts: []
 # e.g:
 # extraVolumeMounts:
