@@ -35,8 +35,8 @@ spec:
           {{- if .Values.image.pullPolicy }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- else }}
-          {{- end }}
           imagePullPolicy: Always
+          {{- end }}
           ports:
             - name: http
               containerPort: 8080
