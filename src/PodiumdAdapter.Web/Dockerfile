@@ -1,11 +1,11 @@
 #See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
 USER app
 WORKDIR /app
 EXPOSE 8080
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/PodiumdAdapter.Web/PodiumdAdapter.Web.csproj", "PodiumdAdapter.Web/"]
@@ -33,7 +33,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "PodiumdAdapter.Web.dll"]
 
-FROM scratch as final
+FROM scratch AS final
 COPY --from=test /testresults/*.trx .
 COPY --from=test /testresults/*.info .
 # this line only exists so we can build and cache all stages in one go
