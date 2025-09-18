@@ -99,6 +99,7 @@ jobs:
 
       - name: Publish Coverage
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: romeovs/lcov-reporter-action@v0.2.16
         with:
           lcov-file: ./testresults/coverage.info
