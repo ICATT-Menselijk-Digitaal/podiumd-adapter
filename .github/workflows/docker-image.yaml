@@ -91,7 +91,8 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          action_fail: false
+          action_fail: true
+          comment_mode: off
           files: |
             testresults/*.trx
             testresults/*.xml
