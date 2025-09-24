@@ -1,82 +1,85 @@
-name: Docker CI
+name: Build & Release PodiumD Adapter
 
 on:
-  pull_request:
-    branches:
-      - main
-
   push:
-    branches:
-      - main
+    branches: ["main"]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: ["main"]
+    types: [ opened, synchronize, reopened, edited ]
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  WEB_IMAGE: ghcr.io/icatt-menselijk-digitaal/podiumd-adapter
+  SHOULD_PUSH: ${{ github.event_name != 'pull_request' }}
+  SHOULD_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  IS_LATEST: false
+  VERSION: ""
+  REVISION: ""
+
+permissions:
+  contents: write
+  packages: write
+  attestations: write
+  id-token: write
+  checks: write
+
 jobs:
-  build-node:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: read
-      checks: write
-      pull-requests: write
-      packages: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Get date
-        if: github.event_name != 'pull_request'
-        id: date
+      - name: "Find the latest release tag (determined by semver sort)"
+        id: latest-semver
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          REPO_URL: ${{ github.event.repository.html_url }}
+          TAG_FILTER: '^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
         run: |
-          echo "DATE=$(date +'%Y%m%d%H%M%S')-$(echo $GITHUB_SHA | head -c 7)" >> $GITHUB_ENV
-
-      - name: Get branch name
-        if: github.event_name != 'pull_request'
-        id: branch
-        run: |
-          BRANCH_NAME="${{ github.head_ref }}"
-          if [[ -z "$BRANCH_NAME" ]]; then
-            BRANCH_NAME="${{ github.ref }}"
-            BRANCH_NAME="${BRANCH_NAME#refs/heads/}"
+          TAG=$(\
+            git ls-remote --exit-code --refs --tags --sort='-v:refname' "$REPO_URL" \
+            | awk '{print $2}' | grep -E "$TAG_FILTER" | head -n 1
+          )
+          echo "tag-ref=${TAG}" >> "$GITHUB_OUTPUT"
+          if [ "$TAG" = "${{ github.ref }}" ] ; then
+              echo "IS_LATEST=true" >> "$GITHUB_ENV"
           fi
-          BRANCH_NAME=$(echo $BRANCH_NAME | tr / -)
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-
-      - name: Set release code
-        if: github.event_name != 'pull_request'
-        id: releasecode
-        run: |
-          VERSION=$(grep APP_VERSION= .env | cut -d '=' -f2)
-          RELEASE=$BRANCH_NAME-$DATE
-          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
-          echo "APP_ENV=prod">> $GITHUB_ENV
-          echo "APP_BUILD=latest">> $GITHUB_ENV
-          echo "set APP_ENV to $APP_ENV"
-
-      - name: Setting CONTAINER_PROJECT_NAME
-        if: github.event_name != 'pull_request'
-        run: |
-          NAME=$(grep CONTAINER_PROJECT_NAME= .env | cut -d '=' -f2)
-          echo "CONTAINER_PROJECT_NAME=$NAME" >> $GITHUB_ENV
-
-      - name: Setting CONTAINER_REGISTRY_BASE
-        if: github.event_name != 'pull_request'
-        run: |
-          NAME=$(grep CONTAINER_REGISTRY_BASE= .env | cut -d '=' -f2)
-          echo "CONTAINER_REGISTRY_BASE=$NAME" >> $GITHUB_ENV
-
-      - name: Set full container name
-        if: github.event_name != 'pull_request'
-        run: echo "CONTAINER_NAME=${{ env.CONTAINER_REGISTRY_BASE }}/${{ env.CONTAINER_PROJECT_NAME }}" >> $GITHUB_ENV
-
-      - name: Setting tags
-        if: github.event_name != 'pull_request'
-        run: |
-          echo "TAG_RELEASE=${{ env.CONTAINER_NAME }}:${{ env.RELEASE}}" >> $GITHUB_ENV
-          echo "TAG_LATEST=${{ env.CONTAINER_NAME }}:latest" >> $GITHUB_ENV
-          echo "TAG_LATEST_BRANCH=${{ env.CONTAINER_NAME }}:${{ env.BRANCH_NAME }}-latest" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: ${{ fromJson(env.SHOULD_PUSH) }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          flavor: |
+            latest=${{ env.IS_LATEST }}
+          images: |
+            ${{ env.WEB_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: set version and revision in env
+        run: |
+          VERSION="${{ fromJson(env.SHOULD_RELEASE) && fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] || '0.0.0' }}"
+          # Remove 'v' prefix for .NET compatibility
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}" >> "$GITHUB_ENV"
 
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v2
@@ -89,30 +92,29 @@ jobs:
         if: always()
         with:
           action_fail: true
+          comment_mode: off
           files: |
             testresults/*.trx
             testresults/*.xml
 
       - name: Publish Coverage
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: romeovs/lcov-reporter-action@v0.2.16
         with:
           lcov-file: ./testresults/coverage.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+      - name: Build & push image
+        uses: docker/build-push-action@v6
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: push web
-        if: github.event_name != 'pull_request'
-        uses: docker/bake-action@v5
-        with:
-          push: true
-          load: false
-          targets: web
-          files: docker-bake.hcl
+          context: .
+          file: src/PodiumdAdapter.Web/Dockerfile
+          target: web
+          push: ${{ fromJSON(env.SHOULD_PUSH) }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
