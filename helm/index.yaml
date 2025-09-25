@@ -3,7 +3,17 @@ entries:
   podiumd-adapter:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2024-01-11T22:21:55.8613224+01:00"
+    created: "2025-06-19T10:18:18.5848715+02:00"
+    description: A Helm chart for Kubernetes
+    digest: fecc366d0470b3f192fe1504031339d158f9efdf11b93744a66edb73a634a257
+    name: podiumd-adapter
+    type: application
+    urls:
+    - podiumd-adapter-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-06-19T10:18:18.5828652+02:00"
     description: A Helm chart for Kubernetes
     digest: 164a2429b21a7251ec73187fbfbdd144a94b3211ca9d4cbcfb858f1166c71cfd
     name: podiumd-adapter
@@ -11,4 +21,4 @@ entries:
     urls:
     - podiumd-adapter-1.0.0.tgz
     version: 1.0.0
-generated: "2024-01-11T22:21:55.8606139+01:00"
+generated: "2025-06-19T10:18:18.5808516+02:00"

@@ -16,6 +16,7 @@ RUN dotnet build "./PodiumdAdapter.Web.csproj" -c $BUILD_CONFIGURATION  --no-res
 
 FROM build AS test
 ARG BUILD_CONFIGURATION=Release
+ARG VERSION=""
 WORKDIR /test
 COPY ["test/PodiumdAdapter.Web.Test/PodiumdAdapter.Web.Test.csproj", "PodiumdAdapter.Web.Test/"]
 RUN dotnet restore "./PodiumdAdapter.Web.Test/PodiumdAdapter.Web.Test.csproj"
@@ -26,7 +27,8 @@ RUN dotnet test -c Release --no-build --logger trx --results-directory /testresu
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./PodiumdAdapter.Web.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+ARG VERSION
+RUN dotnet publish "./PodiumdAdapter.Web.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false ${VERSION:+/p:InformationalVersion=$VERSION}
 
 FROM base AS web
 WORKDIR /app
